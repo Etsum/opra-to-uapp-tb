@@ -161,8 +161,28 @@ def generate_xml(preset: EQPreset) -> str:
     return '\n'.join(lines)
 
 
+def sanitise_for_latin1(s: str) -> str:
+    """Replace characters that can't be encoded in ISO-8859-1 with safe equivalents."""
+    # Common Unicode -> ASCII substitutions
+    replacements = {
+        '\u2022': '-',   # • bullet
+        '\u2013': '-',   # – en dash
+        '\u2014': '-',   # — em dash
+        '\u2018': "'",   # ' left single quote
+        '\u2019': "'",   # ' right single quote
+        '\u201c': '"',   # " left double quote
+        '\u201d': '"',   # " right double quote
+        '\u2026': '...',  # … ellipsis
+    }
+    for char, replacement in replacements.items():
+        s = s.replace(char, replacement)
+    # Drop any remaining non-Latin-1 characters
+    return s.encode('iso-8859-1', errors='replace').decode('iso-8859-1')
+
+
 def escape_xml_attr(s: str) -> str:
     """Escape special characters for XML attribute values."""
+    s = sanitise_for_latin1(s)
     return (s.replace('&', '&amp;')
              .replace('"', '&quot;')
              .replace('<', '&lt;')
@@ -377,9 +397,10 @@ def main():
 
 def sanitise_filename(name: str) -> str:
     """Sanitise a string for use as a filename."""
+    # First, apply the same Latin-1 substitutions for common Unicode chars
+    result = sanitise_for_latin1(name)
     # Replace characters that are problematic on various filesystems
     bad_chars = '<>:"/\\|?*'
-    result = name
     for c in bad_chars:
         result = result.replace(c, '_')
     # Collapse multiple underscores/spaces
