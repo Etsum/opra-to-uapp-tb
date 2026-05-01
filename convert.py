@@ -32,8 +32,8 @@ F_MIN = 16
 F_MAX = 20000
 Q_MIN = 0.1
 Q_MAX = 10.0
-GAIN_RANGE = 39.9  # +/- 19.95 dB (Toneboosters native range)
-GAIN_OFFSET = 19.95
+GAIN_RANGE = 39.9  # Toneboosters native range
+GAIN_OFFSET = 20.0
 
 # UAPP/Toneboosters filter type constants (normalised slider positions)
 FILTER_TYPE_LOW_SHELF = "0.071428575"   # 1/14
