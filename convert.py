@@ -32,8 +32,8 @@ F_MIN = 16
 F_MAX = 20000
 Q_MIN = 0.1
 Q_MAX = 10.0
-GAIN_RANGE = 40.0  # +/- 20 dB
-GAIN_OFFSET = 20.0
+GAIN_RANGE = 39.9  # +/- 19.95 dB (Toneboosters native range)
+GAIN_OFFSET = 19.95
 
 # UAPP/Toneboosters filter type constants (normalised slider positions)
 FILTER_TYPE_LOW_SHELF = "0.071428575"   # 1/14
@@ -137,7 +137,8 @@ def generate_xml(preset: EQPreset) -> str:
 
     # Preamp section (6 values at the end)
     # Based on reference XMLs: [0.0, preamp, 0.34, 0.33333334, 0.05, 0.0]
-    preamp_norm = normalise_gain(preset.gain_db)
+    # Preamp is rounded to 2 decimal places in all reference presets
+    preamp_norm = round(normalise_gain(preset.gain_db), 2)
     values.append("0.0")
     values.append(str(preamp_norm))
     values.append("0.34")           # constant across all reference presets
