@@ -1,0 +1,71 @@
+name: Generate UAPP Presets from OPRA
+
+on:
+  workflow_dispatch:
+    inputs:
+      opra_ref:
+        description: 'OPRA branch or tag to use'
+        required: false
+        default: 'main'
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Clone OPRA database
+        run: |
+          git clone --depth 1 --branch ${{ github.event.inputs.opra_ref || 'main' }} \
+            https://github.com/opra-project/OPRA.git opra
+
+      - name: Get OPRA commit info
+        id: opra_info
+        run: |
+          cd opra
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(git log -1 --format=%cs)" >> "$GITHUB_OUTPUT"
+
+      - name: Run converter
+        run: |
+          python convert.py opra --output TBEQPresets --verbose
+
+      - name: Count generated presets
+        id: count
+        run: |
+          count=$(find TBEQPresets -name '*.xml' | wc -l)
+          echo "preset_count=$count" >> "$GITHUB_OUTPUT"
+          echo "Generated $count preset files"
+
+      - name: Create zip archive
+        run: |
+          zip -r TBEQPresets.zip TBEQPresets/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "opra-${{ steps.opra_info.outputs.date }}-${{ steps.opra_info.outputs.sha }}"
+          name: "UAPP Presets (OPRA ${{ steps.opra_info.outputs.date }})"
+          body: |
+            UAPP/Toneboosters PEQ presets generated from the [OPRA database](https://github.com/opra-project/OPRA).
+
+            - **OPRA commit:** opra-project/OPRA@${{ steps.opra_info.outputs.sha }}
+            - **OPRA date:** ${{ steps.opra_info.outputs.date }}
+            - **Presets generated:** ${{ steps.count.outputs.preset_count }}
+
+            ## Usage
+
+            1. Download and extract `TBEQPresets.zip`
+            2. Browse to the preset files you want (organised by manufacturer/product)
+            3. Copy the `.xml` files to the `UAPP/TBEQPresets` folder on your Android device
+            4. In UAPP, go to Parametric EQ settings → ⋮ → Presets and select your preset
+            5. Make sure the PEQ is turned on
+          files: TBEQPresets.zip
+          make_latest: true
